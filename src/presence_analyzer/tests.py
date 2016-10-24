@@ -107,6 +107,32 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
             404
         )
 
+    def test_start_end(self):
+        """
+        Test start end weekday's result.
+        """
+        resp = self.client.get('/api/v1/start_end_weekday/11')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content_type, 'application/json')
+        self.assertEqual(json.loads(resp.data), [
+            ['Mon', 33134.0, 57257.0],
+            ['Tue', 33590.0, 50154.0],
+            ['Wed', 33206.0, 58527.0],
+            ['Thu', 35602.0, 58586.0],
+            ['Fri', 47816.0, 54242.0],
+            ['Sat', 0, 0],
+            ['Sun', 0, 0]
+        ])
+
+    def test_start_end_weekday_404(self):
+        """
+        Test start end weekday returns 404 if user does not exist.
+        """
+        self.assertEqual(
+            self.client.get('/api/v1/start_end_weekday/0').status_code,
+            404
+        )
+
 
 class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
     """
@@ -167,6 +193,37 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
             [[28800, 3600], [], [], [29700], [1800], [], []]
         )
 
+    def test_group_start_end_by_weekday(self):
+        """
+        Test grouping start and end time by weekday.
+        """
+        data = {
+            datetime.date(2016, 10, 17): {
+                'start': datetime.time(8, 0, 0),
+                'end': datetime.time(16, 0, 0),
+            },
+            datetime.date(2016, 10, 20): {
+                'start': datetime.time(9, 30, 0),
+                'end': datetime.time(17, 45, 0),
+            },
+            datetime.date(2016, 10, 24): {
+                'start': datetime.time(8, 30, 0),
+                'end': datetime.time(9, 30, 0),
+            },
+        }
+        self.assertEqual(
+            utils.group_start_end_time_by_weekday(data),
+            [
+                [29700.0, 45900.0],
+                [0, 0],
+                [0, 0],
+                [34200.0, 63900.0],
+                [0, 0],
+                [0, 0],
+                [0, 0]
+            ]
+        )
+
     def test_seconds_since_midnight(self):
         """
         Test calculating seconds since midnight.
@@ -181,7 +238,10 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         Test calculating interval in seconds between two datetime.time objects.
         """
         self.assertEqual(
-            utils.interval(datetime.time(17, 59, 29), datetime.time(18, 2, 15)),
+            utils.interval(
+                datetime.time(17, 59, 29),
+                datetime.time(18, 2, 15)
+            ),
             166
         )
 
