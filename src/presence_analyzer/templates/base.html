@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang=en>
+<head>
+    <meta charset=utf-8>
+    <title>Presence analyzer</title>
+    <meta name="keywords" content="" />
+    <meta name="description" content=""/>
+    <meta name="author" content="STX Next sp. z o.o."/>
+    <meta name="viewport" content="width=device-width; initial-scale=1.0">
+    <link href="{{ url_for('static', filename='css/normalize.css') }}" media="all" rel="stylesheet" type="text/css" />
+    <link href="{{ url_for('static', filename='css/style.css') }}" media="all" rel="stylesheet" type="text/css" />
+
+    <script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    {% block js_block %}
+    {% endblock %}
+</head>
+<body>
+    <div id="main">
+        <div id="header">
+            <h1>Presence analyzer</h1>
+            <ul>
+                {% block menu_bar %}
+                <li {% if request.path == '/presence_weekday' %}id="selected"{% endif %}><a href="{{ url_for('views', view_name='presence_weekday') }}">Presence by weekday</a></li>
+                <li {% if request.path == '/mean_time_weekday' %}id="selected"{% endif %}><a href="{{ url_for('views', view_name='mean_time_weekday') }}">Presence mean time</a></li>
+                {% endblock %}
+            </ul>
+        </div>
+        <div id="content">
+            <h2>{{ current_title }}</h2>
+            <p>
+                <select id="user_id" style="display: none">
+                    <option value="">--</option>
+                </select>
+                <div id="chart_div" style="display: none">
+                </div>
+                <div id="loading">
+                    <img src="{{ url_for('static', filename='img/loading.gif') }}" />
+                </div>
+            </p>
+        </div>
+    </div>
+
+</body>
