@@ -41,7 +41,25 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         """
         resp = self.client.get('/')
         self.assertEqual(resp.status_code, 302)
-        assert resp.headers['Location'].endswith('/presence_weekday.html')
+        assert resp.headers['Location'].endswith('/presence_weekday')
+
+    def test_views(self):
+        """
+        Test views.
+        """
+        views_name = [
+            'presence_weekday',
+            'mean_time_weekday',
+            'presence_start_end'
+        ]
+        for name in views_name:
+            self.assertEqual(self.client.get('/%s' % name).status_code, 200)
+
+    def test_views_404(self):
+        """
+        Test views returns 404 if template for view does not exist.
+        """
+        self.assertEqual(self.client.get('/fake_url').status_code, 404)
 
     def test_api_users(self):
         """
