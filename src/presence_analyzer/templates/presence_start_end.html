@@ -1,12 +1,18 @@
-{% extends "base.html" %}
-{% set current_title = "Presence start-end weekday" %}
+<%inherit file="base.html"/>
+<%!
+    current_title = "Presence start-end weekday"
+%>
 
-{% block menu_bar %}
-    {{ super() }}
-    <li {% if request.path == '/presence_start_end' %}id="selected"{% endif %}><a href="{{ url_for('views', view_name='presence_start_end') }}">Presence start-end</a></li>
-{% endblock %}
+<%block name="menu_bar">
+    ${parent.menu_bar()}
+    <li
+    % if request.path == '/presence_start_end':
+        id="selected"
+    % endif
+    ><a href="<% url_for('views', view_name='presence_start_end') %>">Presence start-end</a></li>
+</%block>
 
-{% block js_block %}
+<%block name="js_block">
     <script type="text/javascript">
         google.load("visualization", "1", {packages:["corechart", "timeline"], 'language': 'pl'});
     </script>
@@ -47,4 +53,4 @@
             });
         })(jQuery);
     </script>
-{% endblock %}
+</%block>

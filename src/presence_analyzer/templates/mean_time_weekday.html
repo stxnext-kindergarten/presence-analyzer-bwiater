@@ -1,7 +1,9 @@
-{% extends "base.html" %}
-{% set current_title = "Presence mean time by weekday" %}
+<%inherit file="base.html"/>
+<%!
+    current_title = "Presence mean time by weekday"
+%>
 
-{% block js_block %}
+<%block name="js_block">
     <script type="text/javascript">
         google.load("visualization", "1", {packages:["corechart"], 'language': 'pl'});
     </script>
@@ -40,4 +42,4 @@
             });
         })(jQuery);
     </script>
-{% endblock %}
+</%block>
