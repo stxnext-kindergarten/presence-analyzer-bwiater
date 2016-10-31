@@ -111,3 +111,14 @@ def run():
         _serve('stop', dry_run=dry_run)
 
     werkzeug.script.run()
+
+
+# bin/update-users-data
+def update_users():
+    """
+    Downloads file from app.config['URL_XML'] and saves it as
+    app.config['DATA_XML'].
+    """
+    app = make_app({}, config=DEPLOY_CFG, debug=False)
+    import urllib
+    urllib.urlretrieve(app.config['URL_XML'], app.config['DATA_XML'])

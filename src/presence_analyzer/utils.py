@@ -9,6 +9,7 @@ from functools import wraps
 from datetime import datetime
 
 from flask import Response
+from lxml import etree
 
 from presence_analyzer.main import app
 
@@ -67,6 +68,46 @@ def get_data():
                 log.debug('Problem with line %d: ', i, exc_info=True)
 
             data.setdefault(user_id, {})[date] = {'start': start, 'end': end}
+
+    return data
+
+
+def get_users_data():
+    """
+    It upgrades get_data() result with user's name and avatar from XML
+    file.
+
+    It creates structure like this:
+    data = {
+        'user_id': {
+            datetime.date(2013, 10, 1): {
+                'start': datetime.time(9, 0, 0),
+                'end': datetime.time(17, 30, 0),
+            },
+            datetime.date(2013, 10, 2): {
+                'start': datetime.time(8, 30, 0),
+                'end': datetime.time(16, 45, 0),
+            },
+            'avatar': 'intranet.stxnext.pl/api/images/users/10',
+            'name': 'Jan K.'
+        }
+    }
+    """
+    data = get_data()
+    name_reader = etree.parse(app.config['DATA_XML'])
+    server = name_reader.find('server')
+    avatar_base_url = '{0}://{1}'.format(
+        server.find('protocol').text,
+        server.find('host').text
+    )
+    for user in name_reader.find('users').findall('user'):
+        user_id = int(user.attrib['id'])
+        data.setdefault(user_id, {})['avatar'] =\
+            '{0}{1}'.format(
+                avatar_base_url,
+                user.find('avatar').text
+        )
+        data[user_id]['name'] = user.find('name').text
 
     return data
 
