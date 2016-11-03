@@ -15,6 +15,10 @@ TEST_DATA_CSV = os.path.join(
     os.path.dirname(__file__), '..', '..', 'runtime', 'data', 'test_data.csv'
 )
 
+TEST_DATA_XML = os.path.join(
+    os.path.dirname(__file__), '..', '..', 'runtime', 'data', 'test_users.xml'
+)
+
 
 # pylint: disable=maybe-no-member, too-many-public-methods
 class PresenceAnalyzerViewsTestCase(unittest.TestCase):
@@ -26,7 +30,10 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         """
         Before each test, set up a environment.
         """
-        main.app.config.update({'DATA_CSV': TEST_DATA_CSV})
+        main.app.config.update({
+            'DATA_CSV': TEST_DATA_CSV,
+            'DATA_XML': TEST_DATA_XML,
+        })
         self.client = main.app.test_client()
 
     def tearDown(self):
@@ -68,9 +75,31 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         resp = self.client.get('/api/v1/users')
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content_type, 'application/json')
-        data = json.loads(resp.data)
-        self.assertEqual(len(data), 2)
-        self.assertDictEqual(data[0], {u'user_id': 10, u'name': u'User 10'})
+        sample_date = [
+            {'user_id': 10, 'name': 'Jan P.'},
+            {'user_id': 11, 'name': 'User 11'},
+            {'user_id': 12, 'name': 'Patryk G.'},
+        ]
+        self.assertEqual(json.loads(resp.data), sample_date)
+
+    def test_users_data_api_view(self):
+        """
+        Test user data view.
+        """
+        resp = self.client.get('/api/v1/users/10')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content_type, 'application/json')
+        sample_date = {
+            'avatar': 'https://intranet.stxnext.pl/api/images/users/10',
+            'real_name': 'Jan P.',
+        }
+        self.assertDictEqual(json.loads(resp.data), sample_date)
+
+    def test_users_data_api_view_404(self):
+        """
+        Test users data view returns 404 if user does not exist.
+        """
+        self.assertEqual(self.client.get('/api/v1/avatar/0').status_code, 404)
 
     def test_api_mean_time_weekday(self):
         """
@@ -161,7 +190,10 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         """
         Before each test, set up a environment.
         """
-        main.app.config.update({'DATA_CSV': TEST_DATA_CSV})
+        main.app.config.update({
+            'DATA_CSV': TEST_DATA_CSV,
+            'DATA_XML': TEST_DATA_XML,
+        })
 
     def tearDown(self):
         """
