@@ -6,7 +6,11 @@ Helper functions used in views.
 import csv
 from json import dumps
 from functools import wraps
-from datetime import datetime
+from datetime import datetime, timedelta
+from threading import Lock
+from copy import deepcopy
+import hashlib
+import pickle
 
 from flask import Response
 from lxml import etree
@@ -33,6 +37,43 @@ def jsonify(function):
     return inner
 
 
+cached = {}
+
+
+def compute_key(function, args, kwargs):
+    key = pickle.dumps((function.func_name, args, kwargs))
+    return hashlib.sha1(key).hexdigest()
+
+
+def cache(seconds):
+    """
+    Cache result of function for the time specified by 'seconds' parametr.
+    """
+    def wrapper(function):
+        @wraps(function)
+        def inner(*args, **kwargs):
+            """
+            This docstring will be overridden by @wraps decorator.
+            """
+            with Lock():
+                key = compute_key(function, args, kwargs)
+                if key in cached:
+                    cache_is_obsolete = (
+                        datetime.now() - cached[key]['datetime'] >
+                        timedelta(seconds=seconds)
+                    )
+                    if not cache_is_obsolete:
+                        return cached[key]['data']
+                cached[key] = {
+                    'datetime': datetime.now(),
+                    'data': function(),
+                }
+                return cached[key]['data']
+        return inner
+    return wrapper
+
+
+@cache(600)
 def get_data():
     """
     Extracts presence data from CSV file and groups it by user_id.
@@ -93,7 +134,7 @@ def get_users_data():
         }
     }
     """
-    data = get_data()
+    data = deepcopy(get_data())
     name_reader = etree.parse(app.config['DATA_XML'])
     server = name_reader.find('server')
     avatar_base_url = '{0}://{1}'.format(

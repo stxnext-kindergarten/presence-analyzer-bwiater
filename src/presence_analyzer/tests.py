@@ -35,12 +35,13 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
             'DATA_XML': TEST_DATA_XML,
         })
         self.client = main.app.test_client()
+        utils.cached = {}
 
     def tearDown(self):
         """
         Get rid of unused objects after each test.
         """
-        pass
+        utils.cached = {}
 
     def test_mainpage(self):
         """
@@ -99,7 +100,7 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         """
         Test users data view returns 404 if user does not exist.
         """
-        self.assertEqual(self.client.get('/api/v1/avatar/0').status_code, 404)
+        self.assertEqual(self.client.get('/api/v1/users/0').status_code, 404)
 
     def test_api_mean_time_weekday(self):
         """
@@ -194,12 +195,13 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
             'DATA_CSV': TEST_DATA_CSV,
             'DATA_XML': TEST_DATA_XML,
         })
+        utils.cached = {}
 
     def tearDown(self):
         """
         Get rid of unused objects after each test.
         """
-        pass
+        utils.cached = {}
 
     def test_get_data(self):
         """
