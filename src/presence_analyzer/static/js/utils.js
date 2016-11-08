@@ -4,6 +4,11 @@ function parseInterval(value) {
     return result;
 }
 
+function secondsToHours(second) {
+    var date = parseInterval(second);
+    return Math.round((date.getHours())+24*(date.getDate()-1)+date.getMinutes()/60);
+}
+
 (function($) {
     $(document).ready(function(){
         var loading = $('#loading');
