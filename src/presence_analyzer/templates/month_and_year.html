@@ -1,0 +1,59 @@
+<%inherit file="base.html"/>
+<%!
+    current_title = "Presence time by month and year"
+%>
+
+<%block name="js_block">
+    <script type="text/javascript">
+        google.load("visualization", "1", {packages:["corechart"], 'language': 'pl'});
+    </script>
+    <script type="text/javascript">
+        (function($) {
+            $(document).ready(function(){
+                $('#user_id').change(function(){
+                    var selected_user = $("#user_id").val();
+                    var chart_div = $('#chart_div');
+                    var loading = $('#loading');
+                    if(selected_user) {
+                        loading.show();
+                        chart_div.hide();
+                        $.getJSON("/api/v1/month_and_year/"+selected_user, function(result) {
+                            $.each(result, function(index, value) {
+                                value[0] = new Date(value[0]);
+                                value[1] = secondsToHours(value[1]);
+                                value.push(160);
+                            });
+                            var length = result.length;
+                            if(length<=2){
+                                var dt1 = new Date(result[0][0].getTime());
+                                dt1.setMonth(dt1.getMonth()-1);
+                                var dt2 = new Date(result[length-1][0].getTime());
+                                dt2.setMonth(dt2.getMonth()+1);
+                                result.push([dt1, 0, 160]);
+                                result.push([dt2, 0, 160]);
+                            }
+                            var data = new google.visualization.DataTable();
+                            data.addColumn('datetime', 'Month');
+                            data.addColumn('number', 'Sum of working time per month (h)');
+                            data.addColumn('number', 'Monthly working time (h)');
+                            data.addRows(result);
+                            var options = {
+                                hAxis: {title: 'Month', format: 'MM-yyyy'},
+                                series: {1: {type: 'line'}},
+                                bar: { groupWidth: "90%" },
+                                vAxis: {title: 'Working time'}
+                            };
+                            var formatter = new google.visualization.DateFormat({pattern: 'MM-yyyy'});
+                            formatter.format(data, 0);
+
+                            chart_div.show();
+                            loading.hide();
+                            var chart = new google.visualization.ColumnChart(chart_div[0]);
+                            chart.draw(data, options);
+                        });
+                    }
+                });
+            });
+        })(jQuery);
+    </script>
+</%block>

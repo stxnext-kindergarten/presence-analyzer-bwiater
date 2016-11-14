@@ -31,6 +31,11 @@
                         id="selected"
                     % endif
                 ><a href="${ url_for('views', view_name='mean_time_weekday') }">Presence mean time</a></li>
+                <li
+                    % if request.path == '/month_and_year':
+                        id="selected"
+                    % endif
+                ><a href="${ url_for('views', view_name='month_and_year') }">Presence by month</a></li>
                 </%block>
             </ul>
         </div>

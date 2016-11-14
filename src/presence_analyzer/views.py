@@ -12,6 +12,7 @@ from presence_analyzer.main import app
 from presence_analyzer.utils import (
     get_data,
     get_users_data,
+    group_by_month_and_year,
     group_by_weekday,
     group_start_end_time_by_weekday,
     jsonify,
@@ -132,4 +133,23 @@ def start_end_weekday(user_id):
         for weekday, (start, end) in enumerate(weekdays)
     ]
 
+    return result
+
+
+@app.route('/api/v1/month_and_year/<int:user_id>', methods=['GET'])
+@jsonify
+def month_and_year_presence(user_id):
+    """
+    Returns total presence time of give user grouped by month and year.
+    """
+    data = get_data()
+    if user_id not in data:
+        log.debug('User %s not found!', user_id)
+        abort(404)
+
+    year_months = group_by_month_and_year(data[user_id])
+    result = [
+        (year_month, sum(intervals))
+        for year_month, intervals in year_months.items()
+    ]
     return result

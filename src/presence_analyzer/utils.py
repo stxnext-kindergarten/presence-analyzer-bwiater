@@ -3,6 +3,7 @@
 Helper functions used in views.
 """
 
+from collections import defaultdict
 import csv
 from json import dumps
 from functools import wraps
@@ -179,6 +180,19 @@ def group_start_end_time_by_weekday(items):
     result = [[] for i in range(7)]
     for weekday, values in enumerate(time):
         result[weekday] = [mean(values['start']), mean(values['end'])]
+
+    return result
+
+
+def group_by_month_and_year(items):
+    """
+    Groups presence time by months and year.
+    """
+    result = defaultdict(list)
+    for date in items:
+        result[date.strftime('%Y-%m')].append(
+            interval(items[date]['start'], items[date]['end'])
+        )
 
     return result
 

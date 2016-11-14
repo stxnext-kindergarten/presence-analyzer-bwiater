@@ -58,7 +58,8 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         views_name = [
             'presence_weekday',
             'mean_time_weekday',
-            'presence_start_end'
+            'presence_start_end',
+            'month_and_year',
         ]
         for name in views_name:
             self.assertEqual(self.client.get('/%s' % name).status_code, 200)
@@ -181,6 +182,27 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
             404
         )
 
+    def test_month_and_year(self):
+        """
+        Test month and year's results.
+        """
+        resp = self.client.get('/api/v1/month_and_year/12')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content_type, 'application/json')
+        self.assertItemsEqual(json.loads(resp.data), [
+            ['2011-01', 19800],
+            ['2011-02', 3600],
+        ])
+
+    def test_month_and_year_404(self):
+        """
+        Test month and year returns 404 if user doess not exits.
+        """
+        self.assertEqual(
+            self.client.get('/api/v1/month_and_year/0').status_code,
+            404
+        )
+
 
 class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
     """
@@ -209,7 +231,7 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         """
         data = utils.get_data()
         self.assertIsInstance(data, dict)
-        self.assertItemsEqual(data.keys(), [10, 11])
+        self.assertItemsEqual(data.keys(), [10, 11, 12])
         sample_date = datetime.date(2013, 9, 10)
         self.assertIn(sample_date, data[10])
         self.assertItemsEqual(data[10][sample_date].keys(), ['start', 'end'])
@@ -274,6 +296,32 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
                 [0, 0],
                 [0, 0]
             ]
+        )
+
+    def test_group_by_month_and_year(self):
+        """
+        Test grouping presence time by month and year.
+        """
+        data = {
+            datetime.date(2016, 10, 17): {
+                'start': datetime.time(8, 0, 0),
+                'end': datetime.time(16, 0, 0),
+            },
+            datetime.date(2016, 10, 20): {
+                'start': datetime.time(9, 30, 0),
+                'end': datetime.time(13, 30, 0),
+            },
+            datetime.date(2016, 11, 24): {
+                'start': datetime.time(8, 30, 0),
+                'end': datetime.time(9, 30, 0),
+            },
+        }
+        self.assertItemsEqual(
+            utils.group_by_month_and_year(data),
+            {
+                '2016-10': [14400, 28800],
+                '2016-11': [3600],
+            }
         )
 
     def test_seconds_since_midnight(self):
