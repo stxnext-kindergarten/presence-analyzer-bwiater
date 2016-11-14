@@ -14,5 +14,9 @@
             <avatar>/api/images/users/12</avatar>
             <name>Patryk G.</name>
         </user>
+        <user id="13">
+            <avatar>/api/images/users/13</avatar>
+            <name>Łukasz K.</name>
+        </user>
     </users>
 </intranet>
