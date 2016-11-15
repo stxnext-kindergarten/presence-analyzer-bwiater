@@ -47,9 +47,13 @@
                             formatter.format(data, 0);
 
                             chart_div.show();
-                            loading.hide();
                             var chart = new google.visualization.ColumnChart(chart_div[0]);
+                            google.visualization.events.addListener(chart, 'ready', function () {
+                                chart_div.hide();
+                            });
                             chart.draw(data, options);
+                            _showChart = _chartFinished = true;
+                            showChart();
                         });
                     }
                 });
