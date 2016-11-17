@@ -35,9 +35,13 @@
                             formatter.format(data, 2);
 
                             chart_div.show();
-                            loading.hide();
                             var chart = new google.visualization.Timeline(chart_div[0]);
+                            google.visualization.events.addListener(chart, 'ready', function () {
+                                chart_div.hide();
+                            });
                             chart.draw(data, options);
+                            _showChart = _chartFinished = true;
+                            showChart();
                         });
                     }
                 });

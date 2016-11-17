@@ -20,10 +20,15 @@
                         $.getJSON("/api/v1/presence_weekday/"+selected_user, function(result) {
                             var data = google.visualization.arrayToDataTable(result);
                             var options = {};
+
                             chart_div.show();
-                            loading.hide();
                             var chart = new google.visualization.PieChart(chart_div[0]);
+                            google.visualization.events.addListener(chart, 'ready', function () {
+                                chart_div.hide();
+                            });
                             chart.draw(data, options);
+                            _showChart = _chartFinished = true;
+                            showChart();
                         });
                     }
                 });
