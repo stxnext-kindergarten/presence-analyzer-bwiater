@@ -64,3 +64,28 @@ body
     color: black;
     font-weight: bold;
 }
+
+#avatars img {
+    width: 40px;
+    height: 40px;
+    display: block;
+    margin: 1px;
+}
+
+#year_month {
+    display: none;
+}
+
+#top_employees_chart_div, #avatars {
+    padding: 2px 0px;
+    display: none;
+}
+
+#top_employees_chart_div{
+    height: 700px;
+    width: 700px;
+}
+
+div#avatars {
+    vertical-align: top;
+}

@@ -4,6 +4,7 @@ Defines views.
 """
 
 import calendar
+from datetime import datetime
 from flask import redirect, abort
 from flask.ext.mako import render_template
 import locale
@@ -12,6 +13,7 @@ from mako.exceptions import TopLevelLookupException
 from presence_analyzer.main import app
 from presence_analyzer.utils import (
     get_data,
+    get_months,
     get_users_data,
     group_by_month_and_year,
     group_by_weekday,
@@ -61,6 +63,32 @@ def users_view():
     ]
 
     result.sort(key=lambda x: x['name'], cmp=locale.strcoll)
+    return result
+
+
+@app.route('/api/v1/months', methods=['GET'])
+@jsonify
+def months_view():
+    """
+    Sorted year and month listing for dropdown.
+
+    It creates structure like this:
+    data = [
+        {'year': 2011, 'month': 1, 'text': '2011-January'},
+        {'year': 2011, 'month': 2, 'text': '2011-February'},
+        {'year': 2013, 'month': 9, 'text': '2013-September'},
+    ]
+    """
+    data = get_months()
+    result = [
+        {
+            'year': datetime.strptime(date, '%Y-%B').year,
+            'month': datetime.strptime(date, '%Y-%B').month,
+            'text': date,
+        }
+        for date in data
+    ]
+
     return result
 
 
@@ -158,4 +186,56 @@ def month_and_year_presence(user_id):
         (year_month, sum(intervals))
         for year_month, intervals in year_months.items()
     ]
+    return result
+
+
+@app.route('/api/v1/top_employees/<int:year>/<int:month>', methods=['GET'])
+@jsonify
+def employees_in_year_month(year, month):
+    """
+    Returns top 5 employees in month and year.
+
+    It returns structure like this:
+    data = [
+        {
+            'presence_time': 118402,
+            'id': 11,
+            'name': 'User 11',
+            'avatar': None
+        },
+        {
+            'presence_time': 78217,
+            'id': 10,
+            'name': 'Jan P.',
+            'avatar': 'https://intranet.stxnext.pl/api/images/users/10'
+        },
+        {
+            'presence_time': 0,
+            'id': 12,
+            'name': 'Patryk G.',
+            'avatar': 'https://intranet.stxnext.pl/api/images/users/12'
+        },
+    ]
+    """
+    data = get_data()
+    result = []
+    year_month = '{0}-{1:02}'.format(year, month)
+    for user_id in data:
+        grouped = group_by_month_and_year(data[user_id])
+        result.append({
+            'id': user_id,
+            'presence_time': sum(grouped[year_month]),
+        })
+
+    result.sort(key=lambda x: x['presence_time'], reverse=True)
+    result = result[:5]
+
+    users_data = get_users_data()
+    for user in result:
+        user_id = user['id']
+        user.update(
+            name=users_data[user_id].get('name', 'User {0}'.format(user_id)),
+            avatar=users_data[user_id].get('avatar', None),
+        )
+
     return result
