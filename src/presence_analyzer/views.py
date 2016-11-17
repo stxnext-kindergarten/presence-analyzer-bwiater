@@ -6,6 +6,7 @@ Defines views.
 import calendar
 from flask import redirect, abort
 from flask.ext.mako import render_template
+import locale
 from mako.exceptions import TopLevelLookupException
 
 from presence_analyzer.main import app
@@ -21,6 +22,8 @@ from presence_analyzer.utils import (
 
 import logging
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
+
+locale.setlocale(locale.LC_COLLATE, 'pl_PL.UTF-8')
 
 
 @app.route('/')
@@ -46,16 +49,19 @@ def views(view_name):
 @jsonify
 def users_view():
     """
-    Users listing for dropdown.
+    Sorted users listing for dropdown.
     """
     data = get_users_data()
-    return [
+    result = [
         {
             'user_id': i,
             'name': data[i].get('name', 'User {0}'.format(i)),
         }
         for i in data.keys()
     ]
+
+    result.sort(key=lambda x: x['name'], cmp=locale.strcoll)
+    return result
 
 
 @app.route('/api/v1/users/<int:user_id>', methods=['GET'])
