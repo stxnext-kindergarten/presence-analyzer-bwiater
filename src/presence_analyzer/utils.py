@@ -77,7 +77,8 @@ def cache(seconds):
 @cache(600)
 def get_data():
     """
-    Extracts presence data from CSV file and groups it by user_id.
+    Extracts presence data from CSV file only for users from XML file.
+    Groups presence data by user_id.
 
     It creates structure like this:
     data = {
@@ -94,6 +95,7 @@ def get_data():
     }
     """
     data = {}
+    user_data = get_users_data()
     with open(app.config['DATA_CSV'], 'r') as csvfile:
         presence_reader = csv.reader(csvfile, delimiter=',')
         for i, row in enumerate(presence_reader):
@@ -109,33 +111,28 @@ def get_data():
             except (ValueError, TypeError):
                 log.debug('Problem with line %d: ', i, exc_info=True)
 
-            data.setdefault(user_id, {})[date] = {'start': start, 'end': end}
+            if user_id in user_data:
+                data.setdefault(user_id, {})[date] = {
+                    'start': start,
+                    'end': end,
+                }
 
     return data
 
 
 def get_users_data():
     """
-    It upgrades get_data() result with user's name and avatar from XML
-    file.
+    It extracts user's name and avatar from XML file.
 
     It creates structure like this:
     data = {
         'user_id': {
-            datetime.date(2013, 10, 1): {
-                'start': datetime.time(9, 0, 0),
-                'end': datetime.time(17, 30, 0),
-            },
-            datetime.date(2013, 10, 2): {
-                'start': datetime.time(8, 30, 0),
-                'end': datetime.time(16, 45, 0),
-            },
             'avatar': 'intranet.stxnext.pl/api/images/users/10',
             'name': 'Jan K.'
         }
     }
     """
-    data = deepcopy(get_data())
+    data = {}
     name_reader = etree.parse(app.config['DATA_XML'])
     server = name_reader.find('server')
     avatar_base_url = '{0}://{1}'.format(

@@ -78,10 +78,10 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content_type, 'application/json')
         sample_date = [
+            {'user_id': 11, 'name': 'Jan K.'},
             {'user_id': 10, 'name': 'Jan P.'},
             {'user_id': 13, 'name': 'Łukasz K.'},
             {'user_id': 12, 'name': 'Patryk G.'},
-            {'user_id': 11, 'name': 'User 11'},
         ]
         self.assertEqual(json.loads(resp.data), sample_date)
 
