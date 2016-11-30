@@ -11,15 +11,25 @@ function secondsToHours(second) {
 
 (function($) {
     $(document).ready(function(){
-        var loading = $('#loading');
-        $.getJSON("/api/v1/users", function(result) {
+        if($("#user_id").length){
             var dropdown = $("#user_id");
-            $.each(result, function(item) {
-                dropdown.append($("<option />").val(this.user_id).text(this.name));
+            $.getJSON("/api/v1/users", function(result) {
+                $.each(result, function(item) {
+                    dropdown.append($("<option />").val(this.user_id).text(this.name));
+                });
+                dropdown.show();
             });
-            dropdown.show();
-            loading.hide();
-        });
+        }else{
+            var dropdown = $("#year_month");
+            $.getJSON("/api/v1/months", function(result){
+                dropdown = $("#year_month");
+                $.each(result, function(item) {
+                    dropdown.append($("<option />").val(JSON.stringify({'month': this.month, 'year': this.year})).text(this.text));
+                });
+                dropdown.show();
+            });
+        }
+        $('#loading').hide();
     });
 })(jQuery);
 

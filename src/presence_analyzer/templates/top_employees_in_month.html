@@ -1,0 +1,101 @@
+<%inherit file="base.html"/>
+<%!
+    current_title = "Top 5 employees in month."
+%>
+
+<%block name="js_block">
+    <script type="text/javascript">
+        google.load("visualization", "1", {packages:["corechart", "timeline"], 'language': 'pl'});
+    </script>
+    <script type="text/javascript">
+        var avatar_flags;
+        (function($) {
+            $(document).ready(function(){
+                $('#year_month').change(function(){
+                    var selected = $.parseJSON($("#year_month").val());
+                    var chart_div = $('#top_employees_chart_div');
+                    var avatars_div = $('#avatars');
+                    avatar_flags = [false, false, false, false, false];
+                    if(selected){
+                        avatars_div.hide().empty();
+                        $('#loading').show();
+                        chart_div.hide();
+                        $.getJSON('/api/v1/top_employees/' + selected.year + '/' + selected.month, function(result){
+                            var results = [];
+                            $.each(result, function(index, value){
+                                var item = [];
+                                Array.prototype.push.apply(item, [
+                                    String(index+1),
+                                    value.name,
+                                    createTooltip(value.name, secondsToHours(value.presence_time)),
+                                    parseInterval(0),
+                                    parseInterval(value.presence_time)
+                                ]);
+                                results.push(item);
+                                avatars_div.append('<img src="' + value.avatar + '"/>');
+                            });
+
+                            $('img').each(function(index, entry){
+                                $(this).on('load', function (){
+                                    avatar_flags.shift();
+                                    avatar_flags.push(true);
+                                    showChart();
+                                });
+                            });
+                            var data = new google.visualization.DataTable();
+                            data.addColumn({ type: 'string', id: 'Term' });
+                            data.addColumn({ type: 'string', id: 'Name' });
+                            data.addColumn({ type: 'string', role: 'tooltip', 'p': {'html': true}});
+                            data.addColumn({ type: 'date', id: 'Start' });
+                            data.addColumn({ type: 'date', id: 'End' });
+                            data.addRows(results);
+                            var options = {
+                                tooltip: { isHtml: true },
+                                hAxis: {  textColor: '#ff0000' }
+                            }
+
+                            chart_div.show();
+                            var chart = new google.visualization.Timeline(chart_div[0]);
+                            google.visualization.events.addListener(chart, 'ready', function () {
+                                _showChart = _chartFinished = true;
+                                chart_div.hide();
+                                showChart();
+                            });
+                            chart.draw(data, options);
+                        });
+                    }
+                });
+            });
+        })(jQuery);
+
+        function createTooltip(name, hours){
+            return '<div style="padding:5px 5px 5px 5px;">' +
+                '<b>' + name + '</b>' + '<br>' +
+                'Working hours in month: ' + hours +
+                '</div>'
+        }
+
+        function showChart(){
+            function isLoaded(element, index, array) {
+              return element;
+            }
+            if (_chartFinished && avatar_flags.every(isLoaded)){
+                $('#loading').hide();
+                $('#avatars').css('display', 'inline-block');
+                $('#top_employees_chart_div').css('display', 'inline-block');
+                $($('svg > g')[1]).hide();
+            }
+        }
+    </script>
+</%block>
+
+<%block name="dropdown_info">
+    <select id="year_month">
+        <option value="">--</option>
+    </select>
+</%block>
+
+<%block name="chart_div">
+    <div id="avatars"></div>
+    <div id="top_employees_chart_div"></div>
+</%block>

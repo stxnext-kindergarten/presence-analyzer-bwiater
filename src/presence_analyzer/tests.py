@@ -85,6 +85,20 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         ]
         self.assertEqual(json.loads(resp.data), sample_date)
 
+    def test_api_months(self):
+        """
+        Test top 5 employees in month and year.
+        """
+        resp = self.client.get('/api/v1/months')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content_type, 'application/json')
+        sample_date = [
+            {'year': 2011, 'month': 1, 'text': '2011-January'},
+            {'year': 2011, 'month': 2, 'text': '2011-February'},
+            {'year': 2013, 'month': 9, 'text': '2013-September'},
+        ]
+        self.assertEqual(json.loads(resp.data), sample_date)
+
     def test_users_data_api_view(self):
         """
         Test user data view.
@@ -204,6 +218,35 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
             404
         )
 
+    def test_employees_in_year_month(self):
+        """
+        Test listing for month dropdown.
+        """
+        resp = self.client.get('/api/v1/top_employees/2013/09')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content_type, 'application/json')
+        sample_date = [
+            {
+                'presence_time': 118402,
+                'id': 11,
+                'name': 'User 11',
+                'avatar': None
+            },
+            {
+                'presence_time': 78217,
+                'id': 10,
+                'name': 'Jan P.',
+                'avatar': 'https://intranet.stxnext.pl/api/images/users/10'
+            },
+            {
+                'presence_time': 0,
+                'id': 12,
+                'name': 'Patryk G.',
+                'avatar': 'https://intranet.stxnext.pl/api/images/users/12'
+            },
+        ]
+        self.assertEqual(json.loads(resp.data), sample_date)
+
 
 class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
     """
@@ -239,6 +282,15 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         self.assertEqual(
             data[10][sample_date]['start'],
             datetime.time(9, 39, 5)
+        )
+
+    def test_get_months(self):
+        """
+        Test result of get_moths().
+        """
+        self.assertEqual(
+            utils.get_months(),
+            ['2011-January', '2011-February', '2013-September']
         )
 
     def test_group_by_weekday(self):

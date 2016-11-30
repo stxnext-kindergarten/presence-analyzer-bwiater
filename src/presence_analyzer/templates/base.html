@@ -41,12 +41,18 @@
                         id="selected"
                     % endif
                 ><a href="${ url_for('views', view_name='month_and_year') }">Presence by month</a></li>
+                <li
+                    % if request.path == '/top_employees_in_month':
+                        id="selected"
+                    % endif
+                ><a href="${ url_for('views', view_name='top_employees_in_month') }">Top employees in month</a></li>
                 </%block>
             </ul>
         </div>
         <div id="content">
             <h2>${ self.attr.current_title }</h2>
             <p>
+                <%block name="dropdown_info">
                 <select id="user_id" style="display: none">
                     <option value="">--</option>
                 </select>
@@ -55,8 +61,11 @@
                 <div id="avatar" style="display: none">
                     <img id='avatar' style="display: none"/>
                 </div>
-                <div id="chart_div" style="display: none">
+                </%block>
+                <%block name="chart_div">
+                <div id="chart_div" style="display: none;">
                 </div>
+                </%block>
                 <div id="loading">
                     <img src="${ url_for('static', filename='img/loading.gif') }" />
                 </div>
