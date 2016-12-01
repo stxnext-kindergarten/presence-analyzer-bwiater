@@ -105,6 +105,7 @@ def views(view_name):
 
 
 @app.route('/api/v1/users', methods=['GET'])
+@login_required
 @jsonify
 def users_view():
     """
@@ -124,6 +125,7 @@ def users_view():
 
 
 @app.route('/api/v1/months', methods=['GET'])
+@login_required
 @jsonify
 def months_view():
     """
@@ -150,6 +152,7 @@ def months_view():
 
 
 @app.route('/api/v1/users/<int:user_id>', methods=['GET'])
+@login_required
 @jsonify
 def users_data_view(user_id):
     """
@@ -167,6 +170,7 @@ def users_data_view(user_id):
 
 
 @app.route('/api/v1/mean_time_weekday/<int:user_id>', methods=['GET'])
+@login_required
 @jsonify
 def mean_time_weekday_view(user_id):
     """
@@ -187,6 +191,7 @@ def mean_time_weekday_view(user_id):
 
 
 @app.route('/api/v1/presence_weekday/<int:user_id>', methods=['GET'])
+@login_required
 @jsonify
 def presence_weekday_view(user_id):
     """
@@ -208,6 +213,7 @@ def presence_weekday_view(user_id):
 
 
 @app.route('/api/v1/start_end_weekday/<int:user_id>', methods=['GET'])
+@login_required
 @jsonify
 def start_end_weekday(user_id):
     """
@@ -228,6 +234,7 @@ def start_end_weekday(user_id):
 
 
 @app.route('/api/v1/month_and_year/<int:user_id>', methods=['GET'])
+@login_required
 @jsonify
 def month_and_year_presence(user_id):
     """
@@ -247,6 +254,7 @@ def month_and_year_presence(user_id):
 
 
 @app.route('/api/v1/top_employees/<int:year>/<int:month>', methods=['GET'])
+@login_required
 @jsonify
 def employees_in_year_month(year, month):
     """

@@ -12,8 +12,6 @@ class LoginOrRegisterForm(FlaskForm):
     Base form for LoginForm and RegisterForm. Defines username and
     password fields. Both fields are required.
     """
-    next = HiddenField()
-    reg_next = HiddenField()
 
     username = TextField('Username', [validators.Required()])
     password = PasswordField('Password', [validators.Required()])
