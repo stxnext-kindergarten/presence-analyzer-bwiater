@@ -5,8 +5,10 @@ Defines views.
 
 import calendar
 from datetime import datetime
-from flask import redirect, abort
+from flask import redirect, request, abort
 from flask.ext.mako import render_template
+from flask_login import login_user, logout_user
+from flask_user import login_required
 import locale
 from mako.exceptions import TopLevelLookupException
 
@@ -36,7 +38,62 @@ def mainpage():
     return redirect('/presence_weekday')
 
 
+@app.route('/user/register/', methods=['GET', 'POST'])
+def register():
+    """
+    Register view. On GET returns form with username and password fields.
+    On POST validates form, if valid redirects to login view.
+    """
+    user_manager = app.user_manager
+    db_adapter = user_manager.db_adapter
+    register_form = user_manager.register_form(request.form)
+
+    if request.method == 'POST' and register_form.validate():
+        user_fields = {
+            'username': register_form.data['username'],
+            'password': user_manager.hash_password(
+                register_form.data['password']
+            ),
+        }
+        db_adapter.add_object(db_adapter.UserClass, **user_fields)
+        db_adapter.commit()
+        return redirect('/user/login/')
+
+    return render_template('register.html', form=register_form)
+
+
+@app.route('/user/login/', methods=['GET', 'POST'])
+def login():
+    """
+    Login view. On GET returns form with username and password fields.
+    On POST validates form, if valid then login user and redirects to
+    next or '/'.
+    """
+    user_manager = app.user_manager
+    login_form = user_manager.login_form(request.form)
+
+    if request.method == 'POST' and login_form.validate_on_submit():
+        user = user_manager.find_user_by_username(login_form.username.data)
+        if user:
+            login_user(user)
+            return redirect(request.args.get('next') or '/')
+
+    return render_template('login.html', form=login_form)
+
+
+@app.route('/user/logout/', methods=['GET'])
+@login_required
+def logout():
+    """
+    Logout current user. If success redirects to /logout-success/ and
+    renders logout_success.html template.
+    """
+    logout_user()
+    return render_template('logout_success.html')
+
+
 @app.route('/<string:view_name>')
+@login_required
 def views(view_name):
     """
     View for rendering template based on url.
