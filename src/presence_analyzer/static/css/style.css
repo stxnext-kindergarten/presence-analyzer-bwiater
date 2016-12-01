@@ -64,3 +64,58 @@ body
     color: black;
     font-weight: bold;
 }
+
+#avatars img {
+    width: 40px;
+    height: 40px;
+    display: block;
+    margin: 1px;
+}
+
+#year_month {
+    display: none;
+}
+
+#top_employees_chart_div, #avatars {
+    padding: 2px 0px;
+    display: none;
+}
+
+#top_employees_chart_div{
+    height: 700px;
+    width: 700px;
+}
+
+div#avatars {
+    vertical-align: top;
+}
+
+#login_form, #register_form {
+    margin: 0em 0em 1em;
+}
+
+#input_div {
+    margin: 1em 0;
+}
+
+ul.error > li {
+    color: red;
+    list-style-type: none;
+}
+
+div#login_bar {
+    list-style-type: none;
+    display: inline;
+}
+
+div#login_bar > a,
+div#login_bar > p {
+    float: right;
+    outline: none;
+    padding: 0.24em 1em;
+    margin: 0;
+}
+
+div#login_bar > a#selected {
+    background: #d6d6d6;
+}

@@ -151,6 +151,23 @@ def get_users_data():
     return data
 
 
+def get_months():
+    """
+    Extracts distinct year nad month from result of get_data() function in
+    chronological order.
+
+    Returns list like this:
+    ['2011-January', '2011-February', '2013-September']
+    """
+    data = get_data()
+    months = set()
+    year_month_str = '%Y-%B'
+    for user_id in data:
+        months.update(map(lambda x: x.strftime(year_month_str), data[user_id]))
+
+    return sorted(months, key=lambda x: datetime.strptime(x, year_month_str))
+
+
 def group_by_weekday(items):
     """
     Groups presence entries by weekday.

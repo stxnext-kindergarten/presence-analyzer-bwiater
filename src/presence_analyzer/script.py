@@ -30,6 +30,10 @@ def make_app(global_conf={}, config=DEPLOY_CFG, debug=False):
     from presence_analyzer import app
     app.config.from_pyfile(abspath(config))
     app.debug = debug
+
+    from presence_analyzer.main import register_user_manager
+    register_user_manager()
+
     return app
 
 
