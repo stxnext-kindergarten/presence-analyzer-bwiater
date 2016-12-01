@@ -64,3 +64,33 @@ body
     color: black;
     font-weight: bold;
 }
+
+#login_form, #register_form {
+    margin: 0em 0em 1em;
+}
+
+#input_div {
+    margin: 1em 0;
+}
+
+ul.error > li {
+    color: red;
+    list-style-type: none;
+}
+
+div#login_bar {
+    list-style-type: none;
+    display: inline;
+}
+
+div#login_bar > a,
+div#login_bar > p {
+    float: right;
+    outline: none;
+    padding: 0.24em 1em;
+    margin: 0;
+}
+
+div#login_bar > a#selected {
+    background: #d6d6d6;
+}
