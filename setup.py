@@ -28,8 +28,10 @@ setup(
         'setuptools',
         'Flask',
         'Flask-Mako',
+        'Flask-Login==0.4.0',
         'Flask-User',
         'lxml',
+        'pysqlite',
     ],
     entry_points="""
     [console_scripts]
