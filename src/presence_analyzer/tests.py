@@ -3,12 +3,14 @@
 Presence analyzer unit tests.
 """
 from __future__ import unicode_literals
-import os.path
+from flask import url_for
+import os
 import json
 import datetime
 import unittest
+from urlparse import urlparse, parse_qs
 
-from presence_analyzer import main, views, utils
+from presence_analyzer import forms, main, views, utils, models
 
 
 TEST_DATA_CSV = os.path.join(
@@ -19,9 +21,65 @@ TEST_DATA_XML = os.path.join(
     os.path.dirname(__file__), '..', '..', 'runtime', 'data', 'test_users.xml'
 )
 
+TEST_DATABASE = os.path.join(
+    os.path.dirname(__file__), '..', '..', 'runtime', 'data', 'test_db.sqlite'
+)
+
+TEST_USER_USERNAME = 'testuser'
+TEST_USER_PASSWORD = 'passWORD1234'
+
+
+class PresenceAnalyzerTestCase(unittest.TestCase):
+    """
+    Base class for tesing user and login functions.
+    """
+    @classmethod
+    def setUpClass(cls):
+        """
+        Before the first test, sets up configuration for UserManager,
+        creates test database. Inserts test user into db.
+        """
+        main.app.config.update({
+            'SECRET_KEY': 'KEY',
+            'SQLALCHEMY_DATABASE_URI': 'sqlite:///' + TEST_DATABASE,
+            'USER_LOGIN_URL': '/user/login/',
+            'USER_REGISTER_URL': '/user/register/',
+            'WTF_CSRF_ENABLED': False,
+            'USER_PASSWORD_HASH': 'plaintext',
+            'HASH_ROUNDS': 1
+        })
+        db_adapter = main.register_user_manager()
+        db_adapter.add_object(
+            models.User,
+            username=TEST_USER_USERNAME,
+            password=TEST_USER_PASSWORD,
+        )
+        db_adapter.commit()
+
+    @classmethod
+    def tearDownClass(cls):
+        """
+        Removes test database.
+        """
+        os.remove(TEST_DATABASE)
+
+
+def make_app_context(func):
+    def func_wrapper(*args, **kwargs):
+        with main.app.app_context():
+            return func
+    return func_wrapper
+
+
+@make_app_context
+def login_test_user(func):
+    def func_wrapper(*args, **kwargs):
+        return args[0].login(TEST_USER_USERNAME, TEST_USER_PASSWORD)
+    return func_wrapper
+
 
 # pylint: disable=maybe-no-member, too-many-public-methods
-class PresenceAnalyzerViewsTestCase(unittest.TestCase):
+class PresenceAnalyzerViewsTestCase(PresenceAnalyzerTestCase):
     """
     Views tests.
     """
@@ -43,6 +101,19 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         """
         utils.cached = {}
 
+    def login(self, username, password):
+        """
+        Login user.
+        """
+        return self.client.post(
+            '/user/login/',
+            data=dict(
+                username=username,
+                password=password
+            ),
+            follow_redirects=True
+        )
+
     def test_mainpage(self):
         """
         Test main page redirect.
@@ -51,25 +122,122 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 302)
         assert resp.headers['Location'].endswith('/presence_weekday')
 
+    def test_register_view_creates_user_and_redirects(self):
+        """
+        Test register view creates user when valid form is submitted and
+        after that redirects to login view.
+        """
+        self.assertIsNone(
+            main.app.user_manager.find_user_by_username('bill')
+        )
+        resp = self.client.post(
+            '/user/register/',
+            data=dict(
+                username='bill',
+                password='bill_password'
+            )
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(resp.headers['Location'].endswith('/user/login/'))
+        self.assertIsNotNone(
+            main.app.user_manager.find_user_by_username('bill')
+        )
+
+    def test_login_view_displays_error_when_user_does_not_exist(self):
+        """
+        Test login view displays error message when there is no user in
+        database with specific username.
+        """
+        resp = self.client.post(
+            '/user/login/',
+            data=dict(
+                username='fakename',
+                password='password'
+            )
+        )
+        self.assertIn('User does not exist.', resp.data)
+
+    def test_login_view_displays_error_when_password_incorect(self):
+        """
+        Test login view displays error message if password is incorrect.
+        """
+        resp = self.client.post(
+            '/user/login/',
+            data=dict(
+                username=TEST_USER_USERNAME,
+                password='password'
+            )
+        )
+        self.assertIn('Incorrect password.', resp.data)
+
+    def test_login_view_displays_error_when_arguments_are_not_provided(self):
+        """
+        Test login view displays error message if username or password
+        fields are empty when form is being submitted.
+        """
+        resp = self.client.post(
+            '/user/login/',
+            data=dict(
+                username=TEST_USER_USERNAME,
+            )
+        )
+        self.assertIn('This field is required.', resp.data)
+
+        resp = self.client.post(
+            '/user/login/',
+            data=dict(
+                password='password'
+            )
+        )
+        self.assertIn('This field is required.', resp.data)
+
+    @login_test_user
     def test_views(self):
         """
-        Test views.
+        Test views for logged user.
         """
         views_name = [
             'presence_weekday',
             'mean_time_weekday',
             'presence_start_end',
             'month_and_year',
+            'user/logout/',
         ]
         for name in views_name:
-            self.assertEqual(self.client.get('/%s' % name).status_code, 200)
+            self.assertEqual(
+                self.client.get('/{}'.format(name)).status_code,
+                200
+            )
 
+    @login_test_user
     def test_views_404(self):
         """
-        Test views returns 404 if template for view does not exist.
+        Test views returns 404 for logged user if template for view does
+        not exist.
         """
         self.assertEqual(self.client.get('/fake_url').status_code, 404)
 
+    def test_api_views(self):
+        """
+        Test api views redirects to login view if user is not logged
+        and passes next parameter in query to the previous api view.
+        """
+        api_views = [
+            'api/v1/users',
+            'api/v1/months',
+            'api/v1/users/11',
+            'api/v1/mean_time_weekday/11',
+            'api/v1/presence_weekday/11',
+            'api/v1/start_end_weekday/11',
+            'api/v1/month_and_year/11',
+            'api/v1/top_employees/2013/9',
+        ]
+        for view in api_views:
+            url = urlparse(self.client.get('/{}'.format(view)).location)
+            self.assertEquals('/user/login/', url.path)
+            self.assertIn(view, parse_qs(url.query)['next'][0])
+
+    @login_test_user
     def test_api_users(self):
         """
         Test sorted users listing.
@@ -85,6 +253,7 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         ]
         self.assertEqual(json.loads(resp.data), sample_date)
 
+    @login_test_user
     def test_api_months(self):
         """
         Test top 5 employees in month and year.
@@ -99,6 +268,7 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         ]
         self.assertEqual(json.loads(resp.data), sample_date)
 
+    @login_test_user
     def test_users_data_api_view(self):
         """
         Test user data view.
@@ -112,12 +282,14 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
         }
         self.assertDictEqual(json.loads(resp.data), sample_date)
 
+    @login_test_user
     def test_users_data_api_view_404(self):
         """
         Test users data view returns 404 if user does not exist.
         """
         self.assertEqual(self.client.get('/api/v1/users/0').status_code, 404)
 
+    @login_test_user
     def test_api_mean_time_weekday(self):
         """
         Test mean time weekday's result.
@@ -135,6 +307,7 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
             ['Sun', 0]
         ])
 
+    @login_test_user
     def test_api_mean_time_weekday_404(self):
         """
         Test mean time weekday returns 404 if user does not exist.
@@ -144,6 +317,7 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
             404
         )
 
+    @login_test_user
     def test_presence_weekday(self):
         """
         Test presence weekday's result.
@@ -162,6 +336,7 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
             ['Sun', 0]
         ])
 
+    @login_test_user
     def test_presence_weekday_404(self):
         """
         Test presence weekday returns 404 if user does not exist.
@@ -171,6 +346,7 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
             404
         )
 
+    @login_test_user
     def test_start_end(self):
         """
         Test start end weekday's result.
@@ -188,6 +364,7 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
             ['Sun', 0, 0]
         ])
 
+    @login_test_user
     def test_start_end_weekday_404(self):
         """
         Test start end weekday returns 404 if user does not exist.
@@ -197,6 +374,7 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
             404
         )
 
+    @login_test_user
     def test_month_and_year(self):
         """
         Test month and year's results.
@@ -209,6 +387,7 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
             ['2011-02', 3600],
         ])
 
+    @login_test_user
     def test_month_and_year_404(self):
         """
         Test month and year returns 404 if user doess not exits.
@@ -218,6 +397,7 @@ class PresenceAnalyzerViewsTestCase(unittest.TestCase):
             404
         )
 
+    @login_test_user
     def test_employees_in_year_month(self):
         """
         Test listing for month dropdown.
@@ -411,6 +591,73 @@ class PresenceAnalyzerUtilsTestCase(unittest.TestCase):
         self.assertEqual(utils.mean([]), 0)
 
 
+class PresenceAnalyzerFormsTestCase(PresenceAnalyzerTestCase):
+    """
+    Register and login forms tests.
+    """
+
+    @make_app_context
+    def test_login_register_form_requires_fields_values(self):
+        """
+        Test LoginOrRegisterForm shows errors on lack of fields values.
+        """
+        form = forms.LoginOrRegisterForm()
+        self.assertFalse(form.validate())
+        self.assertIn('This field is required.', form.username.errors)
+        self.assertIn('This field is required.', form.password.errors)
+
+    @make_app_context
+    def test_login_register_form_is_valid(self):
+        """
+        Test LoginOrRegisterForm provided with username and password
+        is valid.
+        """
+        form = forms.LoginOrRegisterForm(
+            username='username',
+            password='password',
+        )
+        self.assertTrue(form.validate())
+
+    @make_app_context
+    def test_login_form_user_does_not_exist_error(self):
+        """
+        Test LoginForm validate if user does not exist.
+        """
+        form = forms.LoginForm(
+            username='username',
+            password='password',
+        )
+        self.assertFalse(form.validate())
+        self.assertIn('User does not exist.', form.username.errors)
+
+    @make_app_context
+    def test_login_form_user_validates_password(self):
+        """
+        Test LoginForm shows error message if password is not valid.
+        """
+        form = forms.LoginForm(
+            username='testuser',
+            password='password',
+        )
+        self.assertFalse(form.validate())
+        self.assertIn('Incorrect password.', form.password.errors)
+
+    @make_app_context
+    def test_register_form_validates_username_collide(self):
+        """
+        Test RegisterForm find username collide.
+        """
+        register_form = forms.RegisterForm(
+            username=TEST_USER_USERNAME,
+            password=TEST_USER_PASSWORD,
+        )
+        self.assertFalse(register_form.validate())
+        self.assertIn(
+            'Username is already used.',
+            register_form.username.errors
+        )
+
+
 def suite():
     """
     Default test suite.
@@ -418,6 +665,7 @@ def suite():
     base_suite = unittest.TestSuite()
     base_suite.addTest(unittest.makeSuite(PresenceAnalyzerViewsTestCase))
     base_suite.addTest(unittest.makeSuite(PresenceAnalyzerUtilsTestCase))
+    base_suite.addTest(unittest.makeSuite(PresenceAnalyzerFormsTestCase))
     return base_suite
 
 
